@@ -43,7 +43,7 @@ Multithreading::ThreadResult __stdcall Worker::__workerThreadFunction(Multithrea
 	Worker *worker = reinterpret_cast<Worker*>(worker_void);
 	Task* ts;
     size_t i, s, code;
-	__time64_t time, beg;
+    clock_t time, beg;
 	Event thread_ev;
 	Encrypter::EncryptedFile *ef = NULL;
 	std::stringstream bufss;
@@ -56,7 +56,7 @@ Multithreading::ThreadResult __stdcall Worker::__workerThreadFunction(Multithrea
 	worker->addLogEntry(EventType::EV_TRACING, "Working Progress", "Initializing work loop...");
 	for (i = 0; i < s; i++){
 		try{
-			beg = _time64(NULL);
+            beg = clock();
 			//get info for the next task
 			worker->addLogEntry(EventType::EV_TRACING, "Working Progress", "Loading task for new file...");
 			ts = &worker->tasks[i];
@@ -97,7 +97,7 @@ Multithreading::ThreadResult __stdcall Worker::__workerThreadFunction(Multithrea
 
 
             //update stats
-			time = _time64(NULL);
+            time = clock();
 			WaitForSingleObject(worker->mutex, INFINITE);
 			worker->progress = (i + 1) / s * 100;
             worker->speed = ef->getSize() / (size_t)(time - beg+18)*1000;

@@ -7,6 +7,7 @@ logui::logui(QWidget *parent,const QStringList &lst) :
 {
     ui->setupUi(this);
     ui->listLog->addItems(lst);
+    this->setAttribute(Qt::WA_DeleteOnClose);
 }
 
 logui::~logui()
@@ -16,6 +17,6 @@ logui::~logui()
 
 void logui::on_closeBtn_clicked()
 {
-   this->destroy();
-   emit this->destroyed();
+   this->close();
 }
+

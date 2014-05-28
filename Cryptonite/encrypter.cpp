@@ -190,7 +190,7 @@ int Encrypter::WrapBlockCipher::max = BlockCipher::BC_MAX;
 int Encrypter::WrapBlockCipher::unknown = BlockCipher::BC_UNKNOWN;
 
 Encrypter::WrapBlockCipher::WrapBlockCipher(const BlockCipher::Mode type){
-	if (type<0 || type>HT_MAX)
+    if (type<0 || type>BlockCipher::BC_MAX)
 		throw EINVAL;
 	this->type = type;
 	this->cp = nullptr;

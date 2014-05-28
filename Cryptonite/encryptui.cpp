@@ -56,7 +56,7 @@ encryptUI::~encryptUI()
 {
     delete ui;
     watcher_thread.quit();
-    watcher_thread.wait();
+    watcher_thread.terminate(); //kill
 }
 Worker& encryptUI::operator -> (){
     return this->worker;
@@ -74,11 +74,11 @@ void encryptUI::updateSpeedNProgress(){
     //set speed
     if(speed_bytes>=1048576) { //Megabyte
         act_speed = speed_bytes/1048576;
-        scale = "Kb";
+        scale = "Mb";
     }
     else if(speed_bytes>=1024) { //Kilobyte
         act_speed = speed_bytes/1024;
-        scale = "Mb";
+        scale = "Kb";
     }
     else
         act_speed = speed_bytes;

@@ -64,7 +64,7 @@ void mainWindow::syncTable()
                 else
                     t->eac = (Encrypter::EncryptionAlgorithm)1;
                 break;
-            case 2:
+            case 3:
                 //add select hashing algorithm
                 for(u=1; u<=Encrypter::HashingType::HT_MAX; ++u)
                     q->addItem(QString::fromStdString(
@@ -76,7 +76,7 @@ void mainWindow::syncTable()
                 else
                     t->ht = (Encrypter::HashingType)1;
                 break;
-            case 3:
+            case 2:
                 //add select bloccipher algorithm
                 for(u=1; u<=BlockCipher::Mode::BC_MAX; ++u)
                     q->addItem(QString::fromStdString(
@@ -150,13 +150,13 @@ void mainWindow::syncTask(const int row, const int column){
             t.eac = (Encrypter::EncryptionAlgorithm)(qobject_cast<QComboBox*>
                                                      (this->ui->fileList->cellWidget(row,column))->currentIndex()+1);
             break;
-        //2 - Hashing algorithm
-        case 2:
+        //3 - Hashing algorithm
+        case 3:
             t.ht = (Encrypter::HashingType)(qobject_cast<QComboBox*>
                                                     (this->ui->fileList->cellWidget(row,column))->currentIndex()+1);
             break;
-        //3 - BlockCipher Mode
-        case 3:
+        //2 - BlockCipher Mode
+        case 2:
             t.bcm = (BlockCipher::Mode)(qobject_cast<QComboBox*>
                                                     (this->ui->fileList->cellWidget(row,column))->currentIndex()+1);
             break;
