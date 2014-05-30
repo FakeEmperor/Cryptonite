@@ -106,6 +106,20 @@ void encryptUI::on_btnCancel_clicked()
     this->worker.stopWork();
     this->ui->btnCancel->setDisabled(true);
 }
+void disableRootParent(QWidget *obj, const bool dis){
+    QWidget *temp,*par;
+    if(!obj)
+        return;
+    temp = par = obj->parentWidget();
+    while(temp){
+        temp = par->parentWidget();
+        if(temp)
+            par=temp;
+    }
+    if(par) //disable parent
+        par->setDisabled(dis);
+}
+
 
 void encryptUI::on_btnLog_clicked()
 {
@@ -113,6 +127,7 @@ void encryptUI::on_btnLog_clicked()
     QStringList lst;
     for(std::string &s:vec)
         lst.append(QString::fromStdString(s));
+    disableRootParent(this, true);
     logui *lg = new logui(0,lst);
     connect(lg,SIGNAL(destroyed()),this,SLOT(on_logui_destroyed()));
     this->ui->btnLog->setDisabled(true);
@@ -151,5 +166,6 @@ void encryptUI::on_btnStart_clicked()
 }
 
 void encryptUI::on_logui_destroyed(){
+    disableRootParent(this, false);
     this->ui->btnLog->setDisabled(false);
 }

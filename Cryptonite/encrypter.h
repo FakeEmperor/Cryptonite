@@ -70,15 +70,14 @@ namespace Encrypter{
 		return res;
 	};
 	template<typename hashingClass>
-	std::string genPBKDFString(const std::string &key, const std::string &salt, const size_t length, const size_t numIterations){
-		std::string res;
-		static CryptoPP::PKCS5_PBKDF2_HMAC<hashingClass> pbkdf;
+    size_t genPBKDFString(std::string &derived, const std::string &key, const std::string &salt, const size_t length,const size_t numIterations = 0){
+        CryptoPP::PKCS5_PBKDF2_HMAC<hashingClass> pbkdf;
+        size_t res;
 		byte *buffer = new byte[length];
-		pbkdf.DeriveKey(buffer, length, 0, (byte*)key.c_str(), key.length(), (byte*)salt.c_str(), salt.length(), numIterations, 1);
-		res.append((char*)buffer, length);
-		return res;
-	};
-	
+        res = pbkdf.DeriveKey(buffer, length, 0, (byte*)key.c_str(), key.length(), (byte*)salt.c_str(), salt.length(), numIterations, numIterations?0:1);
+        derived.append((char*)buffer, length);
+        return res;
+    };
 	template<typename CryptoAlgorithm>
 	std::string cryptoFunction(const std::string &data, const std::string &key){
 		std::string crypt;
@@ -155,8 +154,8 @@ namespace Encrypter{
 		WrapHashing(const HashingType type);
 		inline HashingType getType();
 		size_t test(const std::string &key, const std::string &salt, const size_t keyLength, const size_t testNumIterations = 200, const size_t seconds = 1);
-		std::string gen(const std::string &key, const std::string &salt, const size_t length, const size_t numIterations);
-
+        std::string gen(const std::string &key, const std::string &salt, const size_t length, size_t &numIterations);
+        std::string genForce(const std::string &key, const std::string &salt, const size_t length, const size_t numIterations);
 		static std::string stringFromType(const int c);
 		static int typeFromString(const std::string &str);
 	};
@@ -187,7 +186,7 @@ namespace Encrypter{
 		HashingType ht;
 		BlockCipher::Mode ecm;
 		EncryptionAlgorithm eac;
-		unsigned short num_pbkdf;
+        size_t num_pbkdf;
 
 		bool enc_status; // 0 - N/E, 1 - ENC
 
@@ -202,7 +201,7 @@ namespace Encrypter{
 		int parseClosedPart(const std::string &str, std::string &data, std::string *filename = nullptr);
 	public:
 		static const std::string h1, h2, eh1;
-
+        static const size_t HeaderSize = 7;
 		
 		//INITIALIZER
 		EncryptedFile(File& outFile);

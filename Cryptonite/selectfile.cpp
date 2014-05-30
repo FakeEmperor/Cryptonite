@@ -18,10 +18,11 @@ QString selectfile::getFilePath(){
 
 void selectfile::on_btnSelect_clicked()
 {
-    QString selFilter = "All files (*.*)";
+
+    QString selFilter = "All files (*)";
     this->filePath = QFileDialog::getSaveFileName(this,"Set output file path",
                                                   QString(),
-                                                  selFilter, &selFilter);
+                                                  "Encrypted Files (*.enc);; Decrypted Files (*.dec);;All files (*)", &selFilter);
     this->ui->edtPath->setText(this->filePath);
     emit this->pathChanged();
 }

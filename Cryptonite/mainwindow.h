@@ -49,7 +49,8 @@ private slots:
     void on_fileList_cellChanged(int row, int column);
 
     void updateActionLabel();
-
+public slots:
+    void on_fast_encrypt_open();
 
 private:
     Ui::mainWindow *ui;

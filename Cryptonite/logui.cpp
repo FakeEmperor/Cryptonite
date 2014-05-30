@@ -2,7 +2,7 @@
 #include "ui_logui.h"
 
 logui::logui(QWidget *parent,const QStringList &lst) :
-    QWidget(parent),
+    QWidget(parent, Qt::FramelessWindowHint),
     ui(new Ui::logui)
 {
     ui->setupUi(this);
@@ -19,4 +19,14 @@ void logui::on_closeBtn_clicked()
 {
    this->close();
 }
+void logui::mousePressEvent(QMouseEvent *evt)
+{
+    oldPos = evt->globalPos();
+}
 
+void logui::mouseMoveEvent(QMouseEvent *evt)
+{
+   const QPoint delta = evt->globalPos() - oldPos;
+   move(x()+delta.x(), y()+delta.y());
+   oldPos = evt->globalPos();
+}

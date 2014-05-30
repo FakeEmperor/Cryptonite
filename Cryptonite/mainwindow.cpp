@@ -11,6 +11,8 @@ mainWindow::mainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->lblActionsCompl->setText("Actions completed: 0/0");
     ui->fileList->setColumnWidth(6, 150);
+    this->connect(ui ->actionFast_Encrypt, SIGNAL(triggered()), this, SLOT(on_fast_encrypt_open()));
+    this->connect(ui->actionImport, SIGNAL(triggered()), this, SLOT(on_btnSelectFile_clicked()));
 }
 
 mainWindow::~mainWindow()
@@ -275,4 +277,6 @@ void mainWindow::on_customCellTableChanged(QObject *o){
        if(this->checkConditions())
         this->ui->btnPushAction->setDisabled(false);
 }
+void mainWindow::on_fast_encrypt_open(){
 
+}

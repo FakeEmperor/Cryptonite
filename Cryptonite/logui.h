@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QStringList>
+#include <QMouseEvent>
 
 namespace Ui {
 class logui;
@@ -19,9 +20,12 @@ public:
 private slots:
     void on_closeBtn_clicked();
 
-
+protected:
+    void mouseMoveEvent(QMouseEvent *evt);
+    void mousePressEvent(QMouseEvent *evt);
 private:
     Ui::logui *ui;
+    QPoint oldPos;
 };
 
 #endif // LOGUI_H

@@ -144,21 +144,45 @@ size_t Encrypter::WrapHashing::test(const std::string &key, const std::string &s
 	}
 	return HT_UNKNOWN;
 }
-std::string Encrypter::WrapHashing::gen(const std::string &key, const std::string &salt, const size_t length, const size_t numIterations){
+std::string Encrypter::WrapHashing::gen(const std::string &key, const std::string &salt, const size_t length, size_t &numIterations){
 	//Fill in buffer
 	using namespace CryptoPP;
+    std::string res;
 	switch (type){
 	case HT_MD5:
-		return  Encrypter::genPBKDFString<MD5>(key, salt,length,numIterations);
+        numIterations = Encrypter::genPBKDFString<MD5>(res,key, salt,length,0);
 		break;
 	case HT_SHA:
-		return  Encrypter::genPBKDFString<SHA>(key, salt, length, numIterations);
+        numIterations = Encrypter::genPBKDFString<SHA>(res, key, salt, length, 0);
 		break;
 	case HT_SHA256:
-		return  Encrypter::genPBKDFString<SHA256>(key, salt, length, numIterations);
+        numIterations = Encrypter::genPBKDFString<SHA256>(res, key, salt, length, 0);
 		break;
+    default:
+        res = "";
+        break;
 	}
-	return "";
+    return res;
+}
+std::string Encrypter::WrapHashing::genForce(const std::string &key, const std::string &salt, const size_t length,const size_t numIterations){
+    //Fill in buffer
+    using namespace CryptoPP;
+    std::string res;
+    switch (type){
+    case HT_MD5:
+        Encrypter::genPBKDFString<MD5>(res,key, salt,length,numIterations);
+        break;
+    case HT_SHA:
+        Encrypter::genPBKDFString<SHA>(res, key, salt, length, numIterations);
+        break;
+    case HT_SHA256:
+        Encrypter::genPBKDFString<SHA256>(res, key, salt, length, numIterations);
+        break;
+    default:
+        res = "";
+        break;
+    }
+    return res;
 }
 
 Encrypter::HashingType Encrypter::WrapHashing::getType(){
@@ -281,12 +305,14 @@ BlockCipher::Mode Encrypter::EncryptedFile::getBlockType(){
 int Encrypter::EncryptedFile::writeOpenPart(IO::File &file){
 	file.clear();
 	std::string str;
-	char buf[6];
+    char buf[Encrypter::EncryptedFile::HeaderSize+1];
 
-	toChars<size_t>(buf+1,  ( this->eac<<24|this->ecm<<16|this->ht<<8|((unsigned char)(this->num_pbkdf>>8)&0xFF) )  );
-	buf[0] = (char)(this->num_pbkdf & 0xFF);
-	buf[5] = '\0';
-	str= this->h1 + UUID + this->h2 + std::string(buf,buf+5);
+    toChars<size_t>(buf+(EncryptedFile::HeaderSize-4),  ( this->eac<<24|this->ecm<<16|this->ht<<8|0));
+    for(size_t i=0; i<sizeof(this->num_pbkdf);i++)
+        buf[EncryptedFile::HeaderSize-4-i] = (unsigned char)(this->num_pbkdf>>(8*(sizeof(this->num_pbkdf)-i-1)) & 0xFF);
+
+    buf[Encrypter::EncryptedFile::HeaderSize] = '\0';
+    str= this->h1 + UUID + this->h2 + std::string(buf,buf+EncryptedFile::HeaderSize);
 	if (!file.checkFile())
 		file.append(str);
 	else
@@ -351,19 +377,25 @@ void Encrypter::EncryptedFile::mainInit(){
 		if (enc_status){
 			//okay, parse it
 			size_t flags;
-			if (this->loadFile(buf, 172+h1.length()+h2.length(), 5, false) != 0)
+            if (this->loadFile(buf, 172+h1.length()+h2.length(), HeaderSize, false) != 0)
 				throw EACCES;
 			//1st byte - enc type
 			//2nd byte - block-cipher mode
 			//3rd byte - hashing type
 			//4-5th bytes - num of PBKDF#2 calls (4th is the BIG_ENDIAN)
 			fromChars(buf.c_str(), flags);
-			this->eac = (EncryptionAlgorithm)buf[4];
-			this->ecm = (BlockCipher::Mode)buf[3];
-			this->ht = (HashingType)buf[2];
-			this->num_pbkdf = ((short)(buf[1]) << 8) | (short)(buf[0]&0xFF) ;
+            this->eac = (EncryptionAlgorithm)buf[HeaderSize-1];
+            this->ecm = (BlockCipher::Mode)buf[HeaderSize-2];
+            this->ht = (HashingType)buf[HeaderSize-3];
+            this->num_pbkdf = 0;
+            for(size_t i=0; i<HeaderSize-3; i++){
+                this->num_pbkdf |=( unsigned char)(buf[HeaderSize-4-i]&0xFF)<<(8*(3-i));
+            }
+
 			//if values are invalid
-			if (this->eac > EncryptionAlgorithm::EA_MAX || this->ecm > BlockCipher::Mode::BC_MAX || this->ht > HashingType::HT_MAX)
+            if (this->eac > EncryptionAlgorithm::EA_MAX || this->eac <= EncryptionAlgorithm::EA_UNKNOWN ||
+                this->ecm > BlockCipher::Mode::BC_MAX || this->ecm <= BlockCipher::Mode::BC_UNKNOWN ||
+                this->ht > HashingType::HT_MAX||this->ht <= HashingType::HT_UNKNOWN)
 				throw EINVAL;
 		}
 
@@ -416,9 +448,9 @@ int Encrypter::EncryptedFile::encrypt(const std::string &key, File &out, WrapEnc
 	this->eac = we.getType();
 	this->ht = wh.getType();
 
-	iv = (this->ecm == BlockCipher::BC_ECB) ? "" : wh.gen(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf); //not needed if ECB
+    derived = wh.gen(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf);
+    iv = (this->ecm == BlockCipher::BC_ECB) ? "" : wh.genForce(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf); //not needed if ECB
 	salt = std::string(Encrypter::UUID, 60, 60);
-	derived = wh.gen(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf);
 
 
 	//save open scheme
@@ -457,16 +489,16 @@ int Encrypter::EncryptedFile::decrypt(const std::string &key, File &out, std::st
 	WrapHashing wh(this->ht);
 	//generate IV and derived key
 	salt = std::string(Encrypter::UUID, 60);
-	
-	iv = (this->ecm == BlockCipher::BC_ECB) ? "" : wh.gen(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf); //not needed if ECB
+    derived = wh.genForce(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf);
+    iv = (this->ecm == BlockCipher::BC_ECB) ? "" : wh.genForce(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf); //not needed if ECB
 	salt = std::string(Encrypter::UUID, 60, 60);
-	derived = wh.gen(key, salt, we.DEFAULT_KEYLENGTH, this->num_pbkdf);
+
 
 	//encrypt closed part, file and padding
 	std::string outs;
 	WrapBlockCipher *wbc = new WrapBlockCipher(this->ecm );
 	BlockCipher::Cipher *bm = wbc->getBlockCipherPointer(we.BLOCKSIZE, iv);
-	if (this->loadFile(data, 172 + h1.length() + h2.length() + 5))
+    if (this->loadFile(data, 172 + h1.length() + h2.length() + HeaderSize))
 		return 1;
 
 	bm->Decrypt(outs, data, derived, we.getCryptoFunction() );

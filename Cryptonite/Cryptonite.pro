@@ -145,7 +145,8 @@ SOURCES += main.cpp\
     utils.cpp \
     worker.cpp \
     selectfile.cpp \
-    logui.cpp
+    logui.cpp \
+    fastencryptui.cpp
 
 HEADERS  += mainwindow.h \
     encryptui.h \
@@ -291,11 +292,13 @@ HEADERS  += mainwindow.h \
     utils.h \
     worker.h \
     selectfile.h \
-    logui.h
+    logui.h \
+    fastencryptui.h
 
 FORMS    += mainwindow.ui \
     encryptui.ui \
     selectfile.ui \
-    logui.ui
+    logui.ui \
+    fastencryptui.ui
 
 RESOURCES +=

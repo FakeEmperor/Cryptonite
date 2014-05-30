@@ -334,10 +334,10 @@ int fillEntry(const std::string &dir_path, DIR* dir, IO::DiskEntryProxy *dep){
 	int handle;
 	dent = readdir(dir);
 	if (!dent)
-		return errno;
+        return errno?errno:EACCES;
 	//skip . and .. folders
-	if (!strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "."))
-		return 0;
+    if (!strcmp(dent->d_name, "..") || !strcmp(dent->d_name, ".") ||!strlen(dent->d_name))
+        return -1;
 	dep->path = dir_path + std::string(&IO::PathSeparator::path_sp,0,1) + dent->d_name;
 	dep->descriptor = 0;
 	if (dent->d_type&DT_DIR)
@@ -375,10 +375,15 @@ int IO::File::list(const std::string &folder_path, std::vector<struct IO::DiskEn
 		return errno;
 	//expand vector to fit minimum size of 1
 	vec.resize(vec.size() + 1);
-	while (!(code = fillEntry(folder_path,dir, &vec[vec.size()-1])) )
-		vec.resize(vec.size() + 1);
+    while ((code = fillEntry(folder_path,dir, &vec[vec.size()-1]))<=0 ){
+        if(!code)
+            vec.resize(vec.size() + 1);
+        else
+            code=0;
+    }
+
 
 	vec.resize(vec.size() - 1); //remove last null element
 	closedir(dir);
-	return code^EACCES;
+    return code?code^EACCES:code;
 };
